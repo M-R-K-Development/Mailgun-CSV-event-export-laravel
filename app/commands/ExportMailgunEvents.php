@@ -53,7 +53,6 @@ class ExportMailgunEvents extends Command
         }
 
         $absolutePath = "$dir/$filename";
-        touch($absolutePath);
 
         $file = fopen($absolutePath, "w");
 

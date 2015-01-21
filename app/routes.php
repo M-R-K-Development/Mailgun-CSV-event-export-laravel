@@ -11,7 +11,19 @@
 |
 */
 
-Route::get('/', function()
-{
-	return View::make('hello');
-});
+Route::get('/{id}/export', [
+        'as'   => 'export-requests.export',
+        'uses' => 'ExportRequestController@export'
+]);
+
+Route::get('/show/{id}', [
+        'as'   => 'export-requests.show',
+        'uses' => 'ExportRequestController@show'
+]);
+
+Route::get('/download/{id}', [
+        'as'   => 'export-requests.download',
+        'uses' => 'ExportRequestController@download'
+]);
+
+Route::resource('/', 'ExportRequestController');
