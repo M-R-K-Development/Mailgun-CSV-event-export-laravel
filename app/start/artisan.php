@@ -11,3 +11,11 @@
 |
 */
 
+$commands = [
+    'ExportMailgunEvents',
+];
+
+// register
+foreach ($commands as $command) {
+    Artisan::add(new $command());
+}
