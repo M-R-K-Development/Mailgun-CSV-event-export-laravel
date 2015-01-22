@@ -1,6 +1,5 @@
 <?php
 
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Mailgun\Mailgun;
 
@@ -37,56 +36,38 @@ class ExportMailgunEvents extends Command
      */
     public function fire()
     {
-        $apiKey = $_ENV['Mailgun.apiKey'];
-        $domain = $_ENV['Mailgun.domain'];
+        $request = ExportRequest::where('processed', '=', 0)
+                            ->first();
 
-        $uri     = "$domain/events";
-        $mailgun = new Mailgun($apiKey);
-        $limit   = 100; // max row from mailgun per call.
-        $fetched = $limit;
+        if (!$request) {
+            $this->info('No request found');
 
-        $filename = $domain . '-' . time() . '.csv';
-        $dir      = storage_path('exports');
-
-        if (!is_dir($dir)) {
-            mkdir($dir);
+            return;
         }
 
-        $absolutePath = "$dir/$filename";
+        $this->info("Processing request $request->name");
 
-        $file = fopen($absolutePath, "w");
+        $filename = $_ENV['Mailgun.domain'] . '-' . time() . '.csv';
 
-        $args = [];
-
-        while ($fetched !== 0) {
-            $response = $mailgun->get($uri, $args);
-            $events   = $response->http_response_body->items;
-
-            foreach ($events as $event) {
-                $row     = [];
-
-                $createdOn = Carbon::createFromTimestampUTC((int)$event->timestamp);
-                $row[]     = $createdOn->toDateTimeString();
-
-                $row[] = $event->event;
-
-                $headers = (array) $event->message->headers;
-                $parts   =  explode('@', $headers['message-id']);
-                $row[]   = $parts[0];
-
-                $row[] = $event->recipient;
-
-                $this->info(json_encode($row));
-
-                fputcsv($file, $row);
-            }
-            $args     = [];
-            $fetched  = count($events);
-            $uri      = $response->http_response_body->paging->next;
-            $this->info($uri);
-            unset($events);
+        $uri        = $_ENV['Mailgun.domain'] . '/events';
+        $event      = trim($request->event);
+        if ($event) {
+            $uri .= "?event=$event";
         }
-        fclose($file);
+
+        $count  = 100;
+        $helper = new ExportHelper;
+
+        while ($count == 100) {
+            $this->info("Processing $uri");
+            list($response, $count, $uri) = $helper->fetchAndExport($uri, storage_path('exports/'.$filename));
+        }
+
+        $request->filename  = $filename;
+        $request->processed = 1;
+        $request->save();
+
+        $this->info("file saved to " . storage_path('exports/' . $filename));
     }
 
     /**

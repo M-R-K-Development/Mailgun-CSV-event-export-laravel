@@ -49,7 +49,7 @@ class ExportHelper
 
         fclose($file);
 
-        $parts = explode('/events', $response->http_response_body->paging->next, 2);
+        $parts = explode('/events/', $response->http_response_body->paging->next, 2);
 
         return array($response, count($events), "$domain/events/" . $parts[1]);
     }
