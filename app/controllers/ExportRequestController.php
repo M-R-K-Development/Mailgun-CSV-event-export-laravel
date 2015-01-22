@@ -39,16 +39,16 @@ class ExportRequestController extends Controller
      */
     public function store()
     {
-        $validator = Validator::make(Input::all(), ExportRequest::$rules);
+        $repo = new ExportRequestRepository;
 
-        if ($validator->passes()) {
-            $request = ExportRequest::create(Input::all());
-
-            return Redirect::route('export-requests.show', ['id' => $request->id]);
-        } else {
+        try {
+            $request = $repo->store(Input::all());
+        } catch (Exception $e) {
             return Redirect::to('/create')
-                    ->withErrors($validator);
+                    ->withErrors($repo->validator);
         }
+
+        return Redirect::route('export-requests.show', array('id' => $request->id));
     }
 
     /**
